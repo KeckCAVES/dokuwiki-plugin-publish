@@ -139,6 +139,10 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             $previous_approved = $arev;
         }
 
+        # Only writers see approval banner
+        global $INFO;
+        if($approver && !$most_recent_approved && $INFO['perm'] < AUTH_EDIT) { return; }
+
         $strings[] = '<div class="approval approved_';
         if($approver && !$most_recent_approved) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
         $strings[] = '">';
