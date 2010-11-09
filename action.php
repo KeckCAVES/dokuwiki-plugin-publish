@@ -83,6 +83,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
         global $REV;
         if($event->data != 'show') { return true; }
+        if(!page_exists($ID)) { return; }
         $meta = p_get_metadata($ID);
         $rev = $REV;
         if(!$rev) { $rev = $meta['last_change']['date']; }
