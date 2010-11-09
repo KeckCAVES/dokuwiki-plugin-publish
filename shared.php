@@ -77,5 +77,3 @@ function in_sub_namespace($valid, $check) {
             'url' => 'http://www.dokuwiki.org/plugin:publish',
         );
     }
-
-?>
