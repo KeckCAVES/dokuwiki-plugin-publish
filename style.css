@@ -1,15 +1,15 @@
 div.approval {
-  margin: 2em;
+  font-size: 0.9em;
+  margin: 1em;
   margin-left: auto;
   margin-right: auto;
-  width: 70% !important;
-  min-height: 40px;
+  max-width: 32em;
   clear: both;
   text-align: justify;
   vertical-align: middle;
   border-collapse: collapse;
-  padding: 15px 20px 15px 80px;
-  background-position: 30px 50%;
+  padding: 1em 1em 1em 4em;
+  background-position: 1.2em 50%;
   background-repeat: no-repeat;
   -moz-border-radius: 10px;
   -khtml-border-radius: 10px;
