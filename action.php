@@ -38,7 +38,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
     function handle_html_editform_output(&$event, $param) {
         global $ID;
-        if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
+        if(!in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $ID)) { return; }
         global $INFO;
         if($INFO['perm'] < AUTH_DELETE) { return; }
         #$html = '<input type=checkbox name=approve> Approve</input>';
@@ -63,7 +63,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $ACT;
         global $USERINFO;
         global $INFO;
-        if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
+        if(!in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $ID)) { return; }
         if($INFO['perm'] < AUTH_DELETE) { return true; }
         if($ACT != 'save') { return true; }
         if(!$event->data[3]) { return true; } # don't approve the doc being moved to archive
@@ -80,7 +80,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     function handle_display_banner(&$event, $param) {
         $strings = array();
         global $ID;
-        if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
+        if(!in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $ID)) { return; }
         global $REV;
         if($event->data != 'show') { return true; }
         if(!page_exists($ID)) { return; }
@@ -196,7 +196,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
     function handle_revisions(&$event, $param) {
         global $ID;
-        if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
+        if(!in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $ID)) { return; }
         global $REV;
         $meta = p_get_metadata($ID);
         $latest_rev = $meta['last_change']['date'];
@@ -247,7 +247,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
                     }
                 }
                 if($usename) {
-                  if(in_namespace($this->getConf('apr_namespaces'), $usename)) {
+                  if(in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $usename)) {
                       $meta = p_get_metadata($usename);
 
                       if($meta['approval'][$meta['last_change']['date']]) {
@@ -290,7 +290,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
         # Only apply to appropriate namespaces
         global $ID;
-        if(!in_namespace($this->getConf('apr_namespaces'), $ID)) { return; }
+        if(!in_namespace($this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces'), $ID)) { return; }
 
         # Find latest rev
         $meta = p_get_metadata($ID);

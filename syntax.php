@@ -16,10 +16,11 @@ require_once(DOKU_INC.'inc/search.php');
 function search_helper(&$data, $base, $file, $type, $lvl, $opts) {
   $ns = $opts[0];
   $valid_ns = $opts[1];
-  if($type == 'd') { return in_sub_namespace($valid_ns, $ns . ':' . str_replace('/', ':', $file)); }
+  $invalid_ns = $opts[2];
+  if($type == 'd') { return in_sub_namespace($valid_ns, $invalid_ns, $ns . ':' . str_replace('/', ':', $file)); }
   if(!preg_match('#\.txt$#', $file)) { return false; }
   $id = pathID($ns . $file);
-  if(!in_namespace($valid_ns, $id)) { return false; }
+  if(!in_namespace($valid_ns, $invalid_ns, $id)) { return false; }
   if(auth_quickaclcheck($id) < AUTH_DELETE) { return false; } //insufficent permissions
   $meta = p_get_metadata($id);
   if($meta['approval'][$meta['last_change']['date']]) {
@@ -75,7 +76,7 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
           $ns = cleanID(getNS($data[3] . ":dummy"));
           $dir = $conf['datadir'] . '/' . str_replace(':', '/', $ns);
           $pages = array();
-          search($pages, $dir, 'search_helper', array($ns, $this->getConf('apr_namespaces')));
+          search($pages, $dir, 'search_helper', array($ns, $this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces')));
           if(count($pages) == 0) {
               $renderer->doc .= '<p class="apr_none">' . $this->getLang('apr_p_none') . '</p>';
               return true;
