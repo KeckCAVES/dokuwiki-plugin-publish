@@ -15,12 +15,12 @@ require_once(DOKU_INC.'inc/search.php');
 // then check if they need approving
 function search_helper(&$data, $base, $file, $type, $lvl, $opts) {
   $ns = $opts[0];
-  $valid_ns = $opts[1];
-  $invalid_ns = $opts[2];
-  if($type == 'd') { return in_sub_namespace($valid_ns, $invalid_ns, $ns . ':' . str_replace('/', ':', $file)); }
+  $patterns = $opts[1];
+  if($type == 'd') { return true; } // Always decend into directory, as hard to know
+                                    // if everything under any given directory is excluded.
   if(!preg_match('#\.txt$#', $file)) { return false; }
   $id = pathID($ns . $file);
-  if(!in_namespace($valid_ns, $invalid_ns, $id)) { return false; }
+  if(!publish_pageIncluded($id, $patterns)) { return false; }
   if(auth_quickaclcheck($id) < AUTH_DELETE) { return false; } //insufficent permissions
   $meta = p_get_metadata($id);
   if($meta['approval'][$meta['last_change']['date']]) {
@@ -74,9 +74,8 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
 
       if($mode == 'xhtml'){
           $ns = cleanID(getNS($data[3] . ":dummy"));
-          $dir = $conf['datadir'] . '/' . str_replace(':', '/', $ns);
           $pages = array();
-          search($pages, $dir, 'search_helper', array($ns, $this->getConf('apr_namespaces'), $this->getConf('apr_ex_namespaces')));
+          search($pages, $conf['datadir'], 'search_helper', array($ns, $this->getConf('apr_namespaces')));
           if(count($pages) == 0) {
               $renderer->doc .= '<p class="apr_none">' . $this->getLang('apr_p_none') . '</p>';
               return true;
@@ -104,17 +103,15 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
                 $working_ns = $this_ns;
             }
             $updated = '<a href="' . wl($page[0]) . '">' . date('d/m/Y H:i', $page[2]) . '</a>';
-            if($page[1] == null || count($page[1]) == 0) {
-                # Has never been approved
-                $approved = '';
-            }else{
+            $approved = '';
+            if($page[1] != null && count($page[1]) != 0) { // Has been approved before
                 $keys = array_keys($page[1]);
                 sort($keys);
                 $last = $keys[count($keys)-1];
-                $approved .= sprintf($this->getLang('apr_p_approved'), 
-                                $page[1][$last][1], 
-                                wl($page[0], 'rev=' . $last),
-                                date('d/m/Y H:i', $last));
+                $approved = sprintf($this->getLang('apr_p_approved'), 
+                                    $page[1][$last][1], 
+                                    wl($page[0], 'rev=' . $last),
+                                    date('d/m/Y H:i', $last));
                 if($last == $page[2]) { $updated = 'Unchanged'; } //shouldn't be possible:
                                                                   //the search_helper should have
                                                                   //excluded this
