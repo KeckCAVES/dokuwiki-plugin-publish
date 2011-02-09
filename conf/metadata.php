@@ -1,4 +1,4 @@
 <?php
 
-$meta['apr_namespaces'] = array('textarea');
-$meta['apr_approved_text'] = array('string');
+$meta['patterns'] = array('textarea');
+$meta['published_text'] = array('string');

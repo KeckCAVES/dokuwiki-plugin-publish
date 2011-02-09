@@ -4,12 +4,12 @@
 // Old Revisions Display   X
 // Recent Changes Display X
 // Redirection X
-// List of Unapproved Documents user has permission to approve X
+// List of Unpublished Documents user has permission to publish X
 // Namespace restrictions + admin X
-// Diff Links in banner on Prev Approved X
-// List of Recent Approvals X
-// Subscriptions should show approvals - hard (MAIL_MESSAGE_SEND is the only appropriate hook)
-// Allow submits of docs with no changes for approval, with autocomment X
+// Diff Links in banner on Prev published X
+// List of Recent publications X
+// Subscriptions should show publications - hard (MAIL_MESSAGE_SEND is the only appropriate hook)
+// Allow submits of docs with no changes for publication, with autocomment X
 // RSS Info -- hard (no hooks in feed.php)
 // Internationalisation (or not) X
 
@@ -27,7 +27,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     function getInfo() { return publish_getInfo(); }
 
     function pageUsesPublish($page) {
-        return publish_pageIncluded($page, $this->getConf('apr_namespaces'));
+        return publish_pageIncluded($page, $this->getConf('patterns'));
     }
 
     function register(&$controller) {
@@ -45,8 +45,8 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         if(!$this->pageUsesPublish($ID)) { return; }
         global $INFO;
         if($INFO['perm'] < AUTH_DELETE) { return; }
-        #$html = '<input type=checkbox name=approve> Approve</input>';
-        $html = '<label class="nowrap" for="approved"><input type="checkbox" id="approved" name="approved" value="1" tabindex=3 onclick="{ return approval_checkbox(\'' . $this->getConf('apr_approved_text') . '\'); }"/> <span>' . $this->getLang('apr_do_approve') . '</span></label>';
+        #$html = '<input type=checkbox name=publish> Publish</input>';
+        $html = '<label class="nowrap" for="published"><input type="checkbox" id="published" name="published" value="1" tabindex=3 onclick="{ return publish_checkbox(\'' . $this->getConf('published_text') . '\'); }"/> <span>' . $this->getLang('do_publish') . '</span></label>';
         $event->data->insertElement(12,$html);
     }
 
@@ -70,13 +70,13 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         if(!$this->pageUsesPublish($ID)) { return; }
         if($INFO['perm'] < AUTH_DELETE) { return true; }
         if($ACT != 'save') { return true; }
-        if(!$event->data[3]) { return true; } # don't approve the doc being moved to archive
-        if($_POST['approved']) {
+        if(!$event->data[3]) { return true; } # don't publish the doc being moved to archive
+        if($_POST['published']) {
             $data = pageinfo();
-            #$newdata = p_get_metadata($ID, 'approval');
-            $newdata = $data['meta']['approval'];
+            #$newdata = p_get_metadata($ID, 'publish');
+            $newdata = $data['meta']['publish'];
             $newdata[$data['lastmod']] = array($data['client'], $USERINFO['name'], $USERINFO['mail']);
-            p_set_metadata($ID, array('approval' => $newdata), true, true);
+            p_set_metadata($ID, array('publish' => $newdata), true, true);
         }
         return true;
     }
@@ -91,105 +91,105 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         $meta = p_get_metadata($ID);
         $rev = $REV;
         if(!$rev) { $rev = $meta['last_change']['date']; }
-        if(!$meta['approval']) { $meta['approval'] = array(); }
-        $allapproved = array_keys($meta['approval']);
-        sort($allapproved);
+        if(!$meta['publish']) { $meta['publish'] = array(); }
+        $allpublished = array_keys($meta['publish']);
+        sort($allpublished);
         $latest_rev = $meta['last_change']['date'];
         #$strings[] = '<!-- ' . print_r($meta, true) . '-->';
 
         $longdate = date('d/m/y H:i', $rev);
 
 
-        # Is this document approved?
-        $approver = null;
+        # Is this document published?
+        $publisher = null;
         $date = null;
-        if($meta['approval'][$rev]) {
-            # Approved
-            if(is_array($meta['approval'][$rev])) {
-              $approver = $meta['approval'][$rev][1];
-              if(!$approver) { $approver = $meta['approval'][$rev][2]; }
-              if(!$approver) { $approver = $meta['approval'][$rev][0]; }
-              $approver = '<a href="mailto:' . 
-                  $meta['approval'][$rev][2] .
+        if($meta['publish'][$rev]) {
+            # Published
+            if(is_array($meta['publish'][$rev])) {
+              $publisher = $meta['publish'][$rev][1]; // Try full name
+              if(!$publisher) { $publisher = $meta['publish'][$rev][2]; } // Try email address
+              if(!$publisher) { $publisher = $meta['publish'][$rev][0]; } // Try login name
+              $publisher = '<a href="mailto:' . 
+                  $meta['publish'][$rev][2] .
                   '">' .
-                  $approver .
+                  $publisher .
                   '</a>';
             }else{
-              $approver = $meta['approval'][$rev];
+              $publisher = $meta['publish'][$rev];
             }
 
             $date = date('d/m/Y', $rev);
         }
 
-        # What is the most recent approved version?
-        $most_recent_approved = null;
-        $id = count($allapproved)-1;
+        # What is the most recent published version?
+        $most_recent_published = null;
+        $id = count($allpublished)-1;
         if($id >= 0) {
-            if($allapproved[$id] > $rev) {
-                $most_recent_approved = $allapproved[$id];
+            if($allpublished[$id] > $rev) {
+                $most_recent_published = $allpublished[$id];
             }
         }
         
         # Latest, if draft
         $most_recent_draft = null;
-        #$strings[] = '<!-- lr='.$latest_rev.', r='.$rev.', mra='.$most_recently_approved.', d='.($latest_rev != $rev).','.($latest_rev != $most_recently_approved).' -->';
-        if($latest_rev != $rev && $latest_rev != $most_recent_approved) {
+        #$strings[] = '<!-- lr='.$latest_rev.', r='.$rev.', mra='.$most_recently_published.', d='.($latest_rev != $rev).','.($latest_rev != $most_recently_published).' -->';
+        if($latest_rev != $rev && $latest_rev != $most_recent_published) {
             $most_recent_draft = $latest_rev;
         }
 
-        # Approved *before* this one
-        $previous_approved = null;
-        foreach($allapproved as $arev) {
+        # Published *before* this one
+        $previous_published = null;
+        foreach($allpublished as $arev) {
             if($arev >= $rev) { break; }
-            $previous_approved = $arev;
+            $previous_published = $arev;
         }
 
-        # Only writers see approval banner
+        # Only writers see publish banner
         global $INFO;
-        if($approver && !$most_recent_approved && $INFO['perm'] < AUTH_EDIT) { return; }
+        if($publisher && !$most_recent_published && $INFO['perm'] < AUTH_EDIT) { return; }
 
-        $strings[] = '<div class="approval approved_';
-        if($approver && !$most_recent_approved) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
+        $strings[] = '<div class="publish published_';
+        if($publisher && !$most_recent_published) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
         $strings[] = '">';
 
         if($most_recent_draft) {
-            $strings[] = '<span class="approval_latest_draft">';
-            $strings[] = sprintf($this->getLang('apr_recent_draft'), wl($ID, 'force_rev=1'));
+            $strings[] = '<span class="publish_latest_draft">';
+            $strings[] = sprintf($this->getLang('recent_draft'), wl($ID, 'force_rev=1'));
             $strings[] = $this->difflink($ID, null, $REV) . '</span>';
         }
 
-        if($most_recent_approved) {
-            # Approved, but there is a more recent version
-            $userrev = $most_recent_approved;
+        if($most_recent_published) {
+            # Published, but there is a more recent version
+            $userrev = $most_recent_published;
             if($userrev == $latest_rev) { $userrev = ''; }
-            $strings[] = '<span class="approval_outdated">';
-            $strings[] = sprintf($this->getLang('apr_outdated'), wl($ID, 'rev=' . $userrev));
+            $strings[] = '<span class="publish_outdated">';
+            $strings[] = sprintf($this->getLang('outdated'), wl($ID, 'rev=' . $userrev));
             $strings[] = $this->difflink($ID, $userrev, $REV) . '</span>';
         }
 
-        if(!$approver) {
+        if(!$publisher) {
             # Draft
-            $strings[] = '<span class="approval_draft">';
-            $strings[] = sprintf($this->getLang('apr_draft'), 
-                            '<span class="approval_date">' . $longdate . '</span>');
+            $strings[] = '<span class="publish_draft">';
+            $strings[] = sprintf($this->getLang('draft'), 
+                            '<span class="publish_date">' . $longdate . '</span>');
             $strings[] = '</span>';
         }
 
-        if($approver) {
-            # Approved
-            $strings[] = '<span class="approval_approved">';
-            $strings[] = sprintf($this->getLang('apr_approved'),
-                            '<span class="approval_date">' . $longdate . '</span>',
-                            $approver);
+        if($publisher) {
+            # Published
+            $strings[] = '<span class="publish_published">';
+            $strings[] = sprintf($this->getLang('published'),
+                            '<span class="publish_date">' . $longdate . '</span>',
+                            $publisher);
             $strings[] = '</span>';
         }
 
-        if($previous_approved) {
-            $strings[] = '<span class="approval_previous">';
-            $strings[] = sprintf($this->getLang('apr_previous'),
-                            wl($ID, 'rev=' . $previous_approved),
-                            date('d/m/y H:i', $previous_approved));
-            $strings[] = $this->difflink($ID, $previous_approved, $REV) . '</span>';
+        if($previous_published) {
+            $strings[] = '<span class="publish_previous">';
+            $strings[] = sprintf($this->getLang('previous'),
+                            wl($ID, 'rev=' . $previous_published),
+                            date('d/m/y H:i', $previous_published));
+            $strings[] = $this->difflink($ID, $previous_published, $REV) . '</span>';
         }
 
         $strings[] = '</div>';
@@ -213,11 +213,11 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
             if($member && $ref['_elem'] == 'tag' &&
                 $ref['_tag'] == 'input' && $ref['name'] == 'rev2[]'){
-                if($meta['approval'][$ref['value']] ||
-                        ($ref['value'] == 'current' && $meta['approval'][$latest_rev])) {
-                  $event->data->_content[$member]['class'] = 'li approved_revision';
+                if($meta['publish'][$ref['value']] ||
+                        ($ref['value'] == 'current' && $meta['publish'][$latest_rev])) {
+                  $event->data->_content[$member]['class'] = 'li published_revision';
                 }else{
-                  $event->data->_content[$member]['class'] = 'li unapproved_revision';
+                  $event->data->_content[$member]['class'] = 'li unpublished_revision';
                 }
                 $member = null;
             }
@@ -254,10 +254,10 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
                   if($this->pageUsesPublish($ID)) {
                       $meta = p_get_metadata($usename);
 
-                      if($meta['approval'][$meta['last_change']['date']]) {
-                        $event->data->_content[$member]['class'] = 'li approved_revision';
+                      if($meta['publish'][$meta['last_change']['date']]) {
+                        $event->data->_content[$member]['class'] = 'li published_revision';
                       }else{
-                        $event->data->_content[$member]['class'] = 'li unapproved_revision';
+                        $event->data->_content[$member]['class'] = 'li unpublished_revision';
                       }
                   }
                 }
@@ -270,8 +270,8 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     function difflink($id, $rev1, $rev2) {
         if($rev1 == $rev2) { return ''; }
         return '<a href="' . wl($id, 'rev2[]=' . $rev1 . '&rev2[]=' . $rev2 . '&do[diff]=1') .
-          '" class="approved_diff_link">' .
-          '<img src="'.DOKU_BASE.'lib/images/diff.png" class="approved_diff_link" alt="Diff" />' .
+          '" class="published_diff_link">' .
+          '<img src="'.DOKU_BASE.'lib/images/diff.png" class="published_diff_link" alt="Diff" />' .
           '</a>';
     }
 
@@ -292,19 +292,19 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $_GET;
         if($_GET['force_rev']) { return; }
 
-        # Only apply to appropriate namespaces
+        # Only apply to appropriate patterns
         global $ID;
         if(!$this->pageUsesPublish($ID)) { return; }
 
         # Find latest rev
         $meta = p_get_metadata($ID);
-        if($meta['approval'][$meta['last_change']['date']]) { return; } //REV=0 *is* approved
+        if($meta['publish'][$meta['last_change']['date']]) { return; } //REV=0 *is* published
 
-        if(!$meta['approval']) { return; } //no approvals
+        if(!$meta['publish']) { return; } //no publications
 
-        # Get list of approvals
-        $all = array_keys($meta['approval']);
-        if(count($all) == 0) { return; } //no approvals
+        # Get list of publications
+        $all = array_keys($meta['publish']);
+        if(count($all) == 0) { return; } //no publications
 
         $REV = $all[count($all)-1];
     }

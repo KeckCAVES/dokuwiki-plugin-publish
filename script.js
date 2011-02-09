@@ -1,7 +1,7 @@
-//Autocomment for Approve Button
-function approval_checkbox(text) {
+//Autocomment for Publish Button
+function publish_checkbox(text) {
   if(text == "") { return true; }
-  var cb=document.getElementById('approved');
+  var cb=document.getElementById('published');
   if(cb == null) { return true; } //huh?
   if(!cb.checked) { return true; } //this only fires on set
   var sum=document.getElementById('edit__summary');

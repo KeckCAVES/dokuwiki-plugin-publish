@@ -1,4 +1,4 @@
 <?php
 
-$conf['apr_namespaces'] = '-wiki:* *';
-$conf['apr_approved_text'] = 'Published';
+$conf['patterns'] = '-wiki:* *';
+$conf['published_text'] = 'Published';

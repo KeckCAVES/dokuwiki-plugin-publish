@@ -1,4 +1,4 @@
 <?php
 
-$lang['apr_namespaces'] = 'Include & exclude patterns for pages requiring publication';
-$lang['apr_approved_text'] = 'Automatic Approval Comment';
+$lang['patterns'] = 'Include & exclude patterns for pages requiring publication';
+$lang['published_text'] = 'Automatic Publish Comment';

@@ -1,4 +1,4 @@
-div.approval {
+div.publish {
   font-size: 0.9em;
   margin: 1em;
   margin-left: auto;
@@ -16,53 +16,53 @@ div.approval {
   border-radius: 10px;
 }
 
-div.approved_yes {
+div.published_yes {
   background-color: #dfd;
   background-image: url(images/yes.gif);
 }
 
-div.approved_no {
+div.published_no {
   background-color: #fdd;
   background-image: url(images/no.gif);
 }
 
-div.approval em {
+div.publish em {
   font-weight: bold;
 }
 
-div.approval span {
+div.publish span {
   display: block;
 }
 
-div.approved_revision {
+div.published_revision {
   background-color: #dfd;
 }
 
-div.unapproved_revision {
+div.unpublished_revision {
   background-color: #fdd;
 }
 
-a.approved_diff_link {
+a.published_diff_link {
   padding-left: 1em;
 }
 
-p.apr_none { }
+p.pub_none { }
 
-/* table.apr_table tr.apr_head th.(apr_page,apr_prev,apr_upd)
- * table.apr_table tr.apr_ns td a
- * table.apr_table tr.apr_entry [apr_never] td.(apr_page,apr_prev,apr_upd) a
+/* table.pub_table tr.pub_head th.(pub_page,pub_prev,pub_upd)
+ * table.pub_table tr.pub_ns td a
+ * table.pub_table tr.pub_entry [pub_never] td.(pub_page,pub_prev,pub_upd) a
  */
-table.apr_table {
+table.pub_table {
   width: 70%;
   background-color: #fdd;
 }
 
-table.apr_table tr.apr_ns td {
+table.pub_table tr.pub_ns td {
   text-align: center;
   background-color: #dfd;
   font-weight: bold;
 }
 
-div.approval span span.approval_date {
+div.publish span span.publish_date {
   display: inline;
 }
