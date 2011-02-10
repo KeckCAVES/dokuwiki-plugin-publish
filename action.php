@@ -31,23 +31,58 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     }
 
     function register(&$controller) {
-        $controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, handle_html_editform_output, array());
         #$controller->register_hook('TPL_ACT_RENDER', 'AFTER', $this, debug, array());
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, handle_action, array());
         $controller->register_hook('TPL_ACT_RENDER', 'BEFORE', $this, handle_display_banner, array());
-        $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, handle_io_write, array());
         $controller->register_hook('HTML_REVISIONSFORM_OUTPUT', 'BEFORE', $this, handle_revisions, array());
         $controller->register_hook('HTML_RECENTFORM_OUTPUT', 'BEFORE', $this, handle_recent, array());
         $controller->register_hook('DOKUWIKI_STARTED', 'BEFORE', $this, handle_start, array());
     }
+    
+    function handle_action(&$event, $param) {
+        global $ACT;
+        if(!in_array($ACT, array('publish'))) { return; }
 
-    function handle_html_editform_output(&$event, $param) {
+        $event->preventDefault(); // Don't worry, I've got this.
+        $this->publish();
+        $preact = $ACT;
+        $ACT = 'show';
         global $ID;
-        if(!$this->pageUsesPublish($ID)) { return; }
+        act_redirect($ID, $preact);
+    }
+
+    function publish() {
+        global $ID;
+        global $REV;
         global $INFO;
-        if($INFO['perm'] < AUTH_DELETE) { return; }
-        #$html = '<input type=checkbox name=publish> Publish</input>';
-        $html = '<label class="nowrap" for="published"><input type="checkbox" id="published" name="published" value="1" tabindex=3 onclick="{ return publish_checkbox(\'' . $this->getConf('published_text') . '\'); }"/> <span>' . $this->getLang('do_publish') . '</span></label>';
-        $event->data->insertElement(12,$html);
+        global $USERINFO;
+
+        if($INFO['perm'] < AUTH_DELETE) {
+            msg('You do not have permission to publish.', -1);
+            return;
+        }
+        if(!$this->pageUsesPublish($ID)) {
+            msg('This page does not require publishing.', -1);
+            return;
+        }
+        if($REV) {
+            msg('Only most recent revision may be published.', -1);
+            return;
+        }
+
+        $publish = $INFO['meta']['publish'];
+        if(!$publish) { $publish = array(); }
+
+        $rev = $INFO['lastmod']; // Revision to publish
+
+        if(is_array($publish[$rev])) {
+            msg('This revision is already published.', -1);
+            return;
+        }
+
+        $publish[$rev] = array($INFO['client'], $USERINFO['name'], $USERINFO['mail']);
+        p_set_metadata($ID, array('publish' => $publish));
+        msg('Published page', 1);
     }
 
     function debug(&$event, $param) {
@@ -58,29 +93,6 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         ptln('</pre>');
     }
 
-    function handle_io_write(&$event, $param) {
-        # This is the only hook I could find which runs on save,
-        # but late enough to have lastmod set (ACTION_ACT_PREPROCESS
-        # is too early)
-        global $_POST;
-        global $ID;
-        global $ACT;
-        global $USERINFO;
-        global $INFO;
-        if(!$this->pageUsesPublish($ID)) { return; }
-        if($INFO['perm'] < AUTH_DELETE) { return true; }
-        if($ACT != 'save') { return true; }
-        if(!$event->data[3]) { return true; } # don't publish the doc being moved to archive
-        if($_POST['published']) {
-            $data = pageinfo();
-            #$newdata = p_get_metadata($ID, 'publish');
-            $newdata = $data['meta']['publish'];
-            $newdata[$data['lastmod']] = array($data['client'], $USERINFO['name'], $USERINFO['mail']);
-            p_set_metadata($ID, array('publish' => $newdata), true, true);
-        }
-        return true;
-    }
-
     function handle_display_banner(&$event, $param) {
         $strings = array();
         global $ID;
@@ -88,6 +100,8 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $REV;
         if($event->data != 'show') { return true; }
         if(!page_exists($ID)) { return; }
+        global $INFO;
+        if($INFO['perm'] < AUTH_EDIT) { return; }
         $meta = p_get_metadata($ID);
         $rev = $REV;
         if(!$rev) { $rev = $meta['last_change']['date']; }
@@ -143,10 +157,6 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             if($arev >= $rev) { break; }
             $previous_published = $arev;
         }
-
-        # Only writers see publish banner
-        global $INFO;
-        if($publisher && !$most_recent_published && $INFO['perm'] < AUTH_EDIT) { return; }
 
         $strings[] = '<div class="publish published_';
         if($publisher && !$most_recent_published) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
@@ -296,16 +306,20 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $ID;
         if(!$this->pageUsesPublish($ID)) { return; }
 
-        # Find latest rev
+        # Get page metadata
         $meta = p_get_metadata($ID);
-        if($meta['publish'][$meta['last_change']['date']]) { return; } //REV=0 *is* published
 
-        if(!$meta['publish']) { return; } //no publications
+        # If latest revision is published, then we're done
+        if($meta['publish'][$meta['last_change']['date']]) { return; }
 
-        # Get list of publications
+        # If no publications of existing page, point to invalid revision
+        if(!$meta['publish']) {
+            if($INFO['exists']) { $REV = -1; }
+            return;
+        }
+
+        # Point to most recent published revision
         $all = array_keys($meta['publish']);
-        if(count($all) == 0) { return; } //no publications
-
         $REV = $all[count($all)-1];
     }
 }
