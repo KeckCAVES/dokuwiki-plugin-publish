@@ -1,4 +1,4 @@
 <?php
 
 $conf['patterns'] = '-wiki:* *';
-$conf['published_text'] = 'Published';
+$conf['auth'] = 'Edit';

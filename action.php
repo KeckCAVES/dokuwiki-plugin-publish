@@ -30,6 +30,18 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         return publish_pageIncluded($page, $this->getConf('patterns'));
     }
 
+    function authorized() {
+        global $INFO;
+        $auth = $this->getConf('auth');
+        if($auth == 'Edit') { return $INFO['perm'] >= AUTH_EDIT; }
+        else if($auth == 'Create') { return $INFO['perm'] >= AUTH_CREATE; }
+        else if($auth == 'Upload') { return $INFO['perm'] >= AUTH_UPLOAD; }
+        else if($auth == 'Delete') { return $INFO['perm'] >= AUTH_DELETE; }
+        else if($auth == 'Manager') { return $INFO['ismanager']; }
+        else if($auth == 'Admin') { return $INFO['isadmin']; }
+        else { return false; }
+    }
+
     function register(&$controller) {
         #$controller->register_hook('TPL_ACT_RENDER', 'AFTER', $this, debug, array());
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, handle_action, array());
@@ -57,7 +69,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $INFO;
         global $USERINFO;
 
-        if($INFO['perm'] < AUTH_DELETE) {
+        if(!$this->authorized()) {
             msg('You do not have permission to publish.', -1);
             return;
         }
@@ -182,7 +194,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             $strings[] = '<span class="publish_draft">';
             $strings[] = sprintf($this->getLang('draft'), 
                             '<span class="publish_date">' . $longdate . '</span>');
-            if(!$most_recent_draft && $INFO['perm'] >= AUTH_DELETE) {
+            if(!$most_recent_draft && $this->authorized()) {
                 $strings[] = '  ' . tpl_link('?do=publish', 'You can publish it.', '', true);
             }
             $strings[] = '</span>';

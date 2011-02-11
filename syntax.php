@@ -21,7 +21,8 @@ function search_helper(&$data, $base, $file, $type, $lvl, $opts) {
   if(!preg_match('#\.txt$#', $file)) { return false; }
   $id = pathID($ns . $file);
   if(!publish_pageIncluded($id, $patterns)) { return false; }
-  if(auth_quickaclcheck($id) < AUTH_DELETE) { return false; } //insufficent permissions
+  //TODO: Perhaps show in table which unpublished pages can be published by current user
+  //if(auth_quickaclcheck($id) < AUTH_DELETE) { return false; } //insufficent permissions
   $meta = p_get_metadata($id);
   if($meta['publish'][$meta['last_change']['date']]) {
       # Already published

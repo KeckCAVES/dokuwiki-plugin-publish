@@ -1,4 +1,5 @@
 <?php
 
 $meta['patterns'] = array('textarea');
-$meta['published_text'] = array('string');
+$meta['auth'] = array('multichoice',
+    '_choices' => array('Edit', 'Create', 'Upload', 'Delete', 'Manager', 'Admin'));
