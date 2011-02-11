@@ -182,6 +182,9 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             $strings[] = '<span class="publish_draft">';
             $strings[] = sprintf($this->getLang('draft'), 
                             '<span class="publish_date">' . $longdate . '</span>');
+            if(!$most_recent_draft && $INFO['perm'] >= AUTH_DELETE) {
+                $strings[] = '  ' . tpl_link('?do=publish', 'You can publish it.', '', true);
+            }
             $strings[] = '</span>';
         }
 
@@ -261,7 +264,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
                     }
                 }
                 if($usename) {
-                  if($this->pageUsesPublish($ID)) {
+                  if($this->pageUsesPublish($usename)) {
                       $meta = p_get_metadata($usename);
 
                       if($meta['publish'][$meta['last_change']['date']]) {
