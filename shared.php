@@ -13,14 +13,3 @@ if (!class_exists('setting_textarea')) {
       // without Dokuwiki complaining.
   }
 }
-
-function publish_getInfo() {
-    return array(
-        'author' => 'Jarrod Lowe',
-        'email' => 'dokuwiki@rrod.net',
-        'date' => '2009-08-26',
-        'name' => 'Publishing Process',
-        'desc' => 'Publishing Process',
-        'url' => 'http://www.dokuwiki.org/plugin:publish',
-    );
-}

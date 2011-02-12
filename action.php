@@ -30,8 +30,6 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         $this->helper =& plugin_load('helper', 'publish');
     }
 
-    function getInfo() { return publish_getInfo(); }
-
     function register(&$controller) {
         #$controller->register_hook('TPL_ACT_RENDER', 'AFTER', $this, debug, array());
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, handle_action, array());

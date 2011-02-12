@@ -8,8 +8,6 @@ require_once(DOKU_PLUGIN.'publish/shared.php');
 
 class helper_plugin_publish extends DokuWiki_Action_Plugin {
 
-    function getInfo() { return publish_getInfo(); }
-
     function getMethods() {
         $result = array();
         $result[] = array(

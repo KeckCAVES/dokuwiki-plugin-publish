@@ -19,8 +19,6 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
         $this->helper =& plugin_load('helper', 'publish');
     }
 
-    function getInfo(){ return publish_getInfo(); }
-
     function pattern() { return '\[UNPUBLISHED.*?\]'; }
     function getType() { return 'substition'; }
     function getSort() { return 20; }

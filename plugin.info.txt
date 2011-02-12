@@ -1,0 +1,7 @@
+base   publish
+author Braden Pellett
+email  bpellett@ucdavis.edu
+date   development
+name   Publishing
+desc   Publishing process, forked from plugin by Jarrod Lowe
+url    https://github.com/KeckCAVES/dokuwiki-plugin-publish
