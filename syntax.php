@@ -1,14 +1,10 @@
 <?php
-// see action.php for details
 
- 
 // must be run within DokuWiki
 if(!defined('DOKU_INC')) die();
  
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 require_once(DOKU_PLUGIN.'syntax.php');
-require_once(DOKU_PLUGIN.'publish/shared.php');
-require_once(DOKU_INC.'inc/search.php');
 
 
 class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {

@@ -3,8 +3,16 @@
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
-require_once(DOKU_PLUGIN.'publish/shared.php');
+
+// Supplementary setting classes
+plugin_load('admin', 'config');
+if (!class_exists('setting_publish_textarea')) {
+  class setting_publish_textarea extends setting {
+      // Used to get textarea provided by default setting class
+      // without Dokuwiki complaining.
+  }
+}
+
 
 class helper_plugin_publish extends DokuWiki_Action_Plugin {
 
