@@ -24,23 +24,13 @@ require_once(DOKU_PLUGIN.'publish/shared.php');
 
 class action_plugin_publish extends DokuWiki_Action_Plugin {
 
+    var $helper = null;
+
+    function __construct() {
+        $this->helper =& plugin_load('helper', 'publish');
+    }
+
     function getInfo() { return publish_getInfo(); }
-
-    function pageUsesPublish($page) {
-        return publish_pageIncluded($page, $this->getConf('patterns'));
-    }
-
-    function authorized() {
-        global $INFO;
-        $auth = $this->getConf('auth');
-        if($auth == 'Edit') { return $INFO['perm'] >= AUTH_EDIT; }
-        else if($auth == 'Create') { return $INFO['perm'] >= AUTH_CREATE; }
-        else if($auth == 'Upload') { return $INFO['perm'] >= AUTH_UPLOAD; }
-        else if($auth == 'Delete') { return $INFO['perm'] >= AUTH_DELETE; }
-        else if($auth == 'Manager') { return $INFO['ismanager']; }
-        else if($auth == 'Admin') { return $INFO['isadmin']; }
-        else { return false; }
-    }
 
     function register(&$controller) {
         #$controller->register_hook('TPL_ACT_RENDER', 'AFTER', $this, debug, array());
@@ -69,11 +59,11 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $INFO;
         global $USERINFO;
 
-        if(!$this->authorized()) {
+        if(!$this->helper->authorized()) {
             msg('You do not have permission to publish.', -1);
             return;
         }
-        if(!$this->pageUsesPublish($ID)) {
+        if(!$this->helper->publishing()) {
             msg('This page does not require publishing.', -1);
             return;
         }
@@ -108,7 +98,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     function handle_display_banner(&$event, $param) {
         $strings = array();
         global $ID;
-        if(!$this->pageUsesPublish($ID)) { return; }
+        if(!$this->helper->publishing()) { return; }
         global $REV;
         if($event->data != 'show') { return true; }
         if(!page_exists($ID)) { return; }
@@ -194,7 +184,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             $strings[] = '<span class="publish_draft">';
             $strings[] = sprintf($this->getLang('draft'), 
                             '<span class="publish_date">' . $longdate . '</span>');
-            if(!$most_recent_draft && $this->authorized()) {
+            if(!$most_recent_draft && $this->helper->authorized()) {
                 $strings[] = '  ' . tpl_link('?do=publish', 'You can publish it.', '', true);
             }
             $strings[] = '</span>';
@@ -225,7 +215,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
     function handle_revisions(&$event, $param) {
         global $ID;
-        if(!$this->pageUsesPublish($ID)) { return; }
+        if(!$this->helper->publishing()) { return; }
         global $REV;
         $meta = p_get_metadata($ID);
         $latest_rev = $meta['last_change']['date'];
@@ -276,7 +266,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
                     }
                 }
                 if($usename) {
-                  if($this->pageUsesPublish($usename)) {
+                  if($this->helper->publishing($usename)) {
                       $meta = p_get_metadata($usename);
 
                       if($meta['publish'][$meta['last_change']['date']]) {
@@ -301,7 +291,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     }
 
     function handle_start(&$event, $param) {
-        # show only
+        # only apply to show action
         global $ACT;
         if($ACT != 'show') { return; }
 
@@ -309,32 +299,28 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $REV;
         if($REV != '') { return; }
 
-        # apply to readers only
+        # only apply to non-editors
         global $INFO;
-        if($INFO['perm'] != AUTH_READ) { return; }
+        if($INFO['perm'] > AUTH_READ) { return; }
 
         # Check for override token
         global $_GET;
         if($_GET['force_rev']) { return; }
 
-        # Only apply to appropriate patterns
-        global $ID;
-        if(!$this->pageUsesPublish($ID)) { return; }
-
-        # Get page metadata
-        $meta = p_get_metadata($ID);
+        # Only apply to pages that use publishing
+        if(!$this->helper->publishing()) { return; }
 
         # If latest revision is published, then we're done
-        if($meta['publish'][$meta['last_change']['date']]) { return; }
+        if($INFO['meta']['publish'][$INFO['meta']['last_change']['date']]) { return; }
 
         # If no publications of existing page, point to invalid revision
-        if(!$meta['publish']) {
+        if(!$INFO['meta']['publish']) {
             if($INFO['exists']) { $REV = -1; }
             return;
         }
 
         # Point to most recent published revision
-        $all = array_keys($meta['publish']);
+        $all = array_keys($INFO['meta']['publish']);
         $REV = $all[count($all)-1];
     }
 }

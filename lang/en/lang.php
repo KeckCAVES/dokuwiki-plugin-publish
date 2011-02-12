@@ -14,7 +14,7 @@ $lang['p_hdr_previous'] = 'Published Previously';
 $lang['p_hdr_updated'] = 'Updated';
 $lang['p_published'] = 'By %s on <a href="%s">%s</a>';
 
-// Submit (Next to the tick-box to publish a page)
+// Action name
 $lang['do_publish'] = 'Publish';
 
 ?>

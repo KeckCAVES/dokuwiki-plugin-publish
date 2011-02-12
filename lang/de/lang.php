@@ -14,7 +14,7 @@ $lang['p_hdr_previous'] = 'Zuletzt bestätigt';
 $lang['p_hdr_updated'] = 'Aktualisiert';
 $lang['p_published'] = 'Von %s am <a href="%s">%s</a>';
 
-// Submit (Next to the tick-box to publish a page)
+// Action name
 $lang['do_publish'] = 'Bestätigen';
 
 ?>

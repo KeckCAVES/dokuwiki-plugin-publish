@@ -11,53 +11,14 @@ require_once(DOKU_PLUGIN.'publish/shared.php');
 require_once(DOKU_INC.'inc/search.php');
 
 
-// filter out pages which can't be published by the current user
-// then check if they need publishing
-function search_helper(&$data, $base, $file, $type, $lvl, $opts) {
-  $ns = $opts[0];
-  $patterns = $opts[1];
-  if($type == 'd') { return true; } // Always decend into directory, as hard to know
-                                    // if everything under any given directory is excluded.
-  if(!preg_match('#\.txt$#', $file)) { return false; }
-  $id = pathID($ns . $file);
-  if(!publish_pageIncluded($id, $patterns)) { return false; }
-  //TODO: Perhaps show in table which unpublished pages can be published by current user
-  //if(auth_quickaclcheck($id) < AUTH_DELETE) { return false; } //insufficent permissions
-  $meta = p_get_metadata($id);
-  if($meta['publish'][$meta['last_change']['date']]) {
-      # Already published
-      return false;
-  }
-  $data[] = array($id, $meta['publish'], $meta['last_change']['date']);
-  return false;
-}
-
-function pagesorter($a, $b){
-    $ac = explode(':',$a[0]);
-    $bc = explode(':',$b[0]);
-    $an = count($ac);
-    $bn = count($bc);
-
-    # Same number of elements, can just string sort
-    if($an == $bn) { return strcmp($a[0], $b[0]); }
-
-    # For each level:
-    # If this is not the last element in either list:
-    #   same -> continue
-    #   otherwise strcmp
-    # If this is the last element in either list, it wins
-    $n = 0;
-    while(true) {
-        if($n + 1 == $an) { return -1; }
-        if($n + 1 == $bn) { return 1; }
-        $s = strcmp($ac[$n], $bc[$n]);
-        if($s != 0) { return $s; }
-        $n += 1;
-    }
-}
-
 class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
  
+    var $helper = null;
+
+    function __construct() {
+        $this->helper =& plugin_load('helper', 'publish');
+    }
+
     function getInfo(){ return publish_getInfo(); }
 
     function pattern() { return '\[UNPUBLISHED.*?\]'; }
@@ -67,21 +28,22 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
     function connectTo($mode) { $this->Lexer->addSpecialPattern($this->pattern(),$mode,'plugin_publish'); }
     function handle($match, $state, $pos, &$handler){
         $namespace = substr($match, 13, -1);
-        return array($match, $state, $pos, $namespace);
+        return compact('match', 'state', 'pos', 'namespace');
     }
 
     function render($mode, &$renderer, $data) {
       global $conf;
+      extract($data); // match, state, pos, namespace
 
       if($mode == 'xhtml'){
-          $ns = cleanID(getNS($data[3] . ":dummy"));
+          $namespace = cleanID(getNS($namespace . ':'));
           $pages = array();
-          search($pages, $conf['datadir'], 'search_helper', array($ns, $this->getConf('patterns')));
+          search($pages, $conf['datadir'], array($this, '_search_helper'), array($namespace));
           if(count($pages) == 0) {
               $renderer->doc .= '<p class="pub_none">' . $this->getLang('p_none') . '</p>';
               return true;
           }
-          usort($pages, pagesorter);
+          usort($pages, array($this, '_pagesorter'));
 
           # Output Table
           $renderer->doc .= '<table class="pub_table"><tr class="pub_head">';
@@ -138,6 +100,43 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
       return false;
     }
 
+    // filter out pages which can't be published by the current user
+    // then check if they need publishing
+    function _search_helper(&$data, $base, $file, $type, $lvl, $opts) {
+      $id = pathID($file);
+      $ns = $opts[0];
+      if($type == 'd') { return !$ns || ($ns == $id); }
+      if($ns && ($ns != getNS($id))) { return false; }
+      if(!preg_match('#\.txt$#', $file)) { return false; }
+      if(!$this->helper->publishing($id)) { return false; }
+      $meta = p_get_metadata($id);
+      if($meta['publish'][$meta['last_change']['date']]) { return false; }
+      $data[] = array($id, $meta['publish'], $meta['last_change']['date']);
+      return false;
+    }
 
+    function _pagesorter($a, $b){
+        $ac = explode(':',$a[0]);
+        $bc = explode(':',$b[0]);
+        $an = count($ac);
+        $bn = count($bc);
+    
+        # Same number of elements, can just string sort
+        if($an == $bn) { return strcmp($a[0], $b[0]); }
+    
+        # For each level:
+        # If this is not the last element in either list:
+        #   same -> continue
+        #   otherwise strcmp
+        # If this is the last element in either list, it wins
+        $n = 0;
+        while(true) {
+            if($n + 1 == $an) { return -1; }
+            if($n + 1 == $bn) { return 1; }
+            $s = strcmp($ac[$n], $bc[$n]);
+            if($s != 0) { return $s; }
+            $n += 1;
+        }
+    }
 
 }

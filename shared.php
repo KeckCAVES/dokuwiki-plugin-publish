@@ -14,20 +14,6 @@ if (!class_exists('setting_textarea')) {
   }
 }
 
-function publish_pageIncluded($page, $patterns) {
-    $patterns = preg_split('/\s+/', $patterns, -1, PREG_SPLIT_NO_EMPTY);
-    $page = str_replace(':', '/', $page);
-    $accept = false;
-    foreach($patterns as $p) { // Check against namespace wildcards
-        $p = str_replace(':', '/', $p);
-        $include = true;
-        if (substr($p,0,1) == '-') { $include=false; $p = substr($p,1); }
-        else if (substr($p,0,1) == '+') { $p = substr($p,1); }
-        if (fnmatch($p, $page)) { $accept = $include; break; }
-    }
-    return $accept;
-}
-
 function publish_getInfo() {
     return array(
         'author' => 'Jarrod Lowe',
