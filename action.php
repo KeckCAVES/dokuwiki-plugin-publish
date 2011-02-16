@@ -101,15 +101,13 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         if($rev == $published) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
         $strings[] = '">';
 
+        $strings[] = $this->helper->button(false);
+
         if($draft) {
             if($rev == $draft) {
-                $longdate = date('d/m/y H:i', $draft);
                 $strings[] = '<span class="publish_draft">';
                 $strings[] = sprintf($this->getLang('draft'), 
-                                     '<span class="publish_date">' . $longdate . '</span>');
-                if($this->helper->authorized()) {
-                    $strings[] = '  <em>' . tpl_link('?do=publish', $this->getLang('do_publish'), '', true) . '</em>';
-                }
+                                     '<span class="publish_date">' . dformat($draft) . '</span>');
                 $strings[] = '</span>';
             } else {
                 $strings[] = '<span class="publish_latest_draft">';
@@ -120,17 +118,16 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
         if($published) {
             if($rev == $published) {
-                $longdate = date('d/m/y H:i', $published);
                 $strings[] = '<span class="publish_published">';
                 $strings[] = sprintf($this->getLang('published'),
-                                     '<span class="publish_date">' . $longdate . '</span>',
+                                     '<span class="publish_date">' . dformat($published) . '</span>',
                                      editorinfo($publish['cur']['client']));
                 $strings[] = '</span>';
                 if($previous_published) {
                     $strings[] = '<span class="publish_previous">';
                     $strings[] = sprintf($this->getLang('previous'),
                                     wl($ID, 'rev=' . $previous_published),
-                                    date('d/m/y H:i', $previous_published));
+                                    dformat($previous_published));
                     $strings[] = $this->difflink($ID, $previous_published, $REV) . '</span>';
                 }
             } else {
@@ -226,7 +223,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
 
         # only apply to latest rev
         global $REV;
-        if($REV != '') { return; }
+        if($REV) { return; }
 
         # only apply to non-editors
         global $INFO;

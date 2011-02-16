@@ -32,13 +32,13 @@ class helper_plugin_publish extends DokuWiki_Action_Plugin {
                 );
         $result[] = array(
                 'name'   => 'button',
-                'desc'   => 'returns a button to publish the current page, if possible',
+                'desc'   => 'returns a button to (un)publish the current page, if possible',
                 'params' => array('print (optional, default true)' => 'boolean'),
                 'return' => array('html' => 'string')
                 );
         $result[] = array(
                 'name'   => 'actionlink',
-                'desc'   => 'returns an action link to publish the current page, if possible',
+                'desc'   => 'returns an action link to (un)publish the current page, if possible',
                 'params' => array(
                     'prefix (optional, default empty)' => 'string',
                     'suffix (optional, default empty)' => 'string',
@@ -99,24 +99,25 @@ class helper_plugin_publish extends DokuWiki_Action_Plugin {
     }
 
     function button($print=true) {
-        if(!$this->authorized()) { return ''; }
+        $type = $this->_action_type();
+        if(!$type) return '';
         global $ID;
-        $out = html_btn('publish', $ID, 'p',
-                        array('do' => 'publish'), // params
+        $out = html_btn($type, $ID, substr($type, 0, 1),
+                        array('do' => $type), // params
                         'get', //method
                         '', // tooltip
-                        $this->getLang('do_publish'));
+                        $this->getLang('do_' . $type));
         if ($print) print $out;
         return $out;
     }
 
     function actionlink($pre='', $suf='', $inner='', $print=true) {
-        if(!$this->authorized()) { return ''; }
+        $type = $this->_action_type();
+        if(!$type) return '';
         global $ID;
-        $accesskey = 'p';
-        $caption = $this->getLang('do_publish');
-        $type = 'publish';
-        $out = tpl_link('?do=publish', $pre.(($inner)?$inner:$caption).$suf,
+        $accesskey = substr($type, 0, 1);
+        $caption = $this->getLang('do_' . $type);
+        $out = tpl_link('?do=' . $type, $pre.(($inner)?$inner:$caption).$suf,
                         'class="action ' . $type . '" ' .
                         'accesskey="' . $accesskey . '" rel="nofollow" ' .
                         'title="' . hsc($caption) . '"', true);
@@ -162,6 +163,20 @@ class helper_plugin_publish extends DokuWiki_Action_Plugin {
         unset($publish['prev']);
         p_set_metadata($ID, array('publish' => $publish));
         return array('msg' => 'ok_unpub', 'code' => 1);
+    }
+
+    function _action_type() {
+        if(!$this->authorized()) { return ''; }
+        if(!$this->publishing()) { return ''; }
+        global $INFO;
+        $rev = $INFO['rev'];
+        $cur = $INFO['meta']['last_change']['date'];
+        $publish_cur = $INFO['meta']['publish']['cur']['rev'];
+        if(!$rev || $rev == $cur) {
+            if($publish_cur != $cur) { return 'publish'; }
+            else { return 'unpublish'; }
+        }
+        return '';
     }
 
     function _operate_check() {
