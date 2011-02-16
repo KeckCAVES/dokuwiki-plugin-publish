@@ -61,17 +61,15 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
             }
             $updated = '<a href="' . wl($page[0]) . '">' . date('d/m/Y H:i', $page[2]) . '</a>';
             $published = '';
-            if($page[1] != null && count($page[1]) != 0) { // Has been published before
-                $keys = array_keys($page[1]);
-                sort($keys);
-                $last = $keys[count($keys)-1];
+            if($page[1]['cur']) { // Has has published version
                 $published = sprintf($this->getLang('p_published'), 
-                                    $page[1][$last][1], 
-                                    wl($page[0], 'rev=' . $last),
-                                    date('d/m/Y H:i', $last));
-                if($last == $page[2]) { $updated = 'Unchanged'; } //shouldn't be possible:
-                                                                  //the search_helper should have
-                                                                  //excluded this
+                                     editorinfo($page[1]['cur']['client']),
+                                     wl($page[0], 'rev=' . $last),
+                                     date('d/m/Y H:i', $page[1]['cur']['rev']));
+                if($page[1]['cur']['rev'] == $page[2])
+                    { $updated = 'Unchanged'; } //shouldn't be possible:
+                                                //the search_helper should have
+                                                //excluded this
             }
 
             $renderer->doc .= '<tr class="pub_table';
@@ -104,7 +102,7 @@ class syntax_plugin_publish extends DokuWiki_Syntax_Plugin {
       if(!preg_match('#\.txt$#', $file)) { return false; }
       if(!$this->helper->publishing($id)) { return false; }
       $meta = p_get_metadata($id);
-      if($meta['publish'][$meta['last_change']['date']]) { return false; }
+      if($meta['publish']['cur']['rev'] == $meta['last_change']['date']) { return false; }
       $data[] = array($id, $meta['publish'], $meta['last_change']['date']);
       return false;
     }

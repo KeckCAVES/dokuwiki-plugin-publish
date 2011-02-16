@@ -33,54 +33,25 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, handle_action, array());
         $controller->register_hook('TPL_ACT_RENDER', 'BEFORE', $this, handle_display_banner, array());
         $controller->register_hook('HTML_REVISIONSFORM_OUTPUT', 'BEFORE', $this, handle_revisions, array());
-        $controller->register_hook('HTML_RECENTFORM_OUTPUT', 'BEFORE', $this, handle_recent, array());
+        //$controller->register_hook('HTML_RECENTFORM_OUTPUT', 'BEFORE', $this, handle_recent, array()); //BROKEN
         $controller->register_hook('DOKUWIKI_STARTED', 'BEFORE', $this, handle_start, array());
     }
     
     function handle_action(&$event, $param) {
         global $ACT;
-        if(!in_array($ACT, array('publish'))) { return; }
-
-        $event->preventDefault(); // Don't worry, I've got this.
-        $this->publish();
-        $preact = $ACT;
-        $ACT = 'show';
-        global $ID;
-        act_redirect($ID, $preact);
-    }
-
-    function publish() {
-        global $ID;
-        global $REV;
-        global $INFO;
-        global $USERINFO;
-
-        if(!$this->helper->authorized()) {
-            msg('You do not have permission to publish.', -1);
-            return;
+        $status = null;
+        switch($ACT) {
+            case 'publish': { $status = $this->helper->publish(); break; }
+            case 'unpublish': { $status = $this->helper->unpublish(); break; }
         }
-        if(!$this->helper->publishing()) {
-            msg('This page does not require publishing.', -1);
-            return;
+        if($status) {
+            $event->preventDefault(); // Don't worry, I got this.
+            msg($this->getLang($status['msg']), $status['code']);
+            $preact = $ACT;
+            $ACT = 'show';
+            global $ID;
+            act_redirect($ID, $preact);
         }
-        if($REV) {
-            msg('Only most recent revision may be published.', -1);
-            return;
-        }
-
-        $publish = $INFO['meta']['publish'];
-        if(!$publish) { $publish = array(); }
-
-        $rev = $INFO['lastmod']; // Revision to publish
-
-        if(is_array($publish[$rev])) {
-            msg('This revision is already published.', -1);
-            return;
-        }
-
-        $publish[$rev] = array($INFO['client'], $USERINFO['name'], $USERINFO['mail']);
-        p_set_metadata($ID, array('publish' => $publish));
-        msg('Published page', 1);
     }
 
     function debug(&$event, $param) {
@@ -92,115 +63,82 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     }
 
     function handle_display_banner(&$event, $param) {
-        $strings = array();
-        global $ID;
+        if($event->data != 'show') { return; }
         if(!$this->helper->publishing()) { return; }
-        global $REV;
-        if($event->data != 'show') { return true; }
+
+        global $ID;
         if(!page_exists($ID)) { return; }
+
         global $INFO;
         if($INFO['perm'] < AUTH_EDIT) { return; }
-        $meta = p_get_metadata($ID);
+        $meta =& $INFO['meta'];
+        $publish =& $meta['publish'];
+
+        global $REV;
         $rev = $REV;
         if(!$rev) { $rev = $meta['last_change']['date']; }
-        if(!$meta['publish']) { $meta['publish'] = array(); }
-        $allpublished = array_keys($meta['publish']);
-        sort($allpublished);
-        $latest_rev = $meta['last_change']['date'];
-        #$strings[] = '<!-- ' . print_r($meta, true) . '-->';
 
-        $longdate = date('d/m/y H:i', $rev);
-
-
-        # Is this document published?
-        $publisher = null;
-        $date = null;
-        if($meta['publish'][$rev]) {
-            # Published
-            if(is_array($meta['publish'][$rev])) {
-              $publisher = $meta['publish'][$rev][1]; // Try full name
-              if(!$publisher) { $publisher = $meta['publish'][$rev][2]; } // Try email address
-              if(!$publisher) { $publisher = $meta['publish'][$rev][0]; } // Try login name
-              $publisher = '<a href="mailto:' . 
-                  $meta['publish'][$rev][2] .
-                  '">' .
-                  $publisher .
-                  '</a>';
-            }else{
-              $publisher = $meta['publish'][$rev];
-            }
-
-            $date = date('d/m/Y', $rev);
-        }
-
-        # What is the most recent published version?
-        $most_recent_published = null;
-        $id = count($allpublished)-1;
-        if($id >= 0) {
-            if($allpublished[$id] > $rev) {
-                $most_recent_published = $allpublished[$id];
-            }
+        # Published
+        $published = null;
+        if($publish['cur']) {
+            $published = $publish['cur']['rev'];
         }
         
-        # Latest, if draft
-        $most_recent_draft = null;
-        #$strings[] = '<!-- lr='.$latest_rev.', r='.$rev.', mra='.$most_recently_published.', d='.($latest_rev != $rev).','.($latest_rev != $most_recently_published).' -->';
-        if($latest_rev != $rev && $latest_rev != $most_recent_published) {
-            $most_recent_draft = $latest_rev;
+        # Unpublished draft
+        $draft = null;
+        if($publish['cur']['rev'] != $meta['last_change']['date']) {
+            $draft = $meta['last_change']['date'];
         }
 
-        # Published *before* this one
+        # Previously published
         $previous_published = null;
-        foreach($allpublished as $arev) {
-            if($arev >= $rev) { break; }
-            $previous_published = $arev;
+        if($publish['prev']) {
+            $previous_published = $publish['prev']['rev'];
         }
 
+        $strings = array();
         $strings[] = '<div class="publish published_';
-        if($publisher && !$most_recent_published) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
+        if($rev == $published) { $strings[] = 'yes'; } else { $strings[] = 'no'; }
         $strings[] = '">';
 
-        if($most_recent_draft) {
-            $strings[] = '<span class="publish_latest_draft">';
-            $strings[] = sprintf($this->getLang('recent_draft'), wl($ID, 'force_rev=1'));
-            $strings[] = $this->difflink($ID, null, $REV) . '</span>';
-        }
-
-        if($most_recent_published) {
-            # Published, but there is a more recent version
-            $userrev = $most_recent_published;
-            if($userrev == $latest_rev) { $userrev = ''; }
-            $strings[] = '<span class="publish_outdated">';
-            $strings[] = sprintf($this->getLang('outdated'), wl($ID, 'rev=' . $userrev));
-            $strings[] = $this->difflink($ID, $userrev, $REV) . '</span>';
-        }
-
-        if(!$publisher) {
-            # Draft
-            $strings[] = '<span class="publish_draft">';
-            $strings[] = sprintf($this->getLang('draft'), 
-                            '<span class="publish_date">' . $longdate . '</span>');
-            if(!$most_recent_draft && $this->helper->authorized()) {
-                $strings[] = '  ' . tpl_link('?do=publish', 'You can publish it.', '', true);
+        if($draft) {
+            if($rev == $draft) {
+                $longdate = date('d/m/y H:i', $draft);
+                $strings[] = '<span class="publish_draft">';
+                $strings[] = sprintf($this->getLang('draft'), 
+                                     '<span class="publish_date">' . $longdate . '</span>');
+                if($this->helper->authorized()) {
+                    $strings[] = '  <em>' . tpl_link('?do=publish', $this->getLang('do_publish'), '', true) . '</em>';
+                }
+                $strings[] = '</span>';
+            } else {
+                $strings[] = '<span class="publish_latest_draft">';
+                $strings[] = sprintf($this->getLang('recent_draft'), wl($ID));
+                $strings[] = $this->difflink($ID, null, $REV) . '</span>';
             }
-            $strings[] = '</span>';
         }
 
-        if($publisher) {
-            # Published
-            $strings[] = '<span class="publish_published">';
-            $strings[] = sprintf($this->getLang('published'),
-                            '<span class="publish_date">' . $longdate . '</span>',
-                            $publisher);
-            $strings[] = '</span>';
-        }
-
-        if($previous_published) {
-            $strings[] = '<span class="publish_previous">';
-            $strings[] = sprintf($this->getLang('previous'),
-                            wl($ID, 'rev=' . $previous_published),
-                            date('d/m/y H:i', $previous_published));
-            $strings[] = $this->difflink($ID, $previous_published, $REV) . '</span>';
+        if($published) {
+            if($rev == $published) {
+                $longdate = date('d/m/y H:i', $published);
+                $strings[] = '<span class="publish_published">';
+                $strings[] = sprintf($this->getLang('published'),
+                                     '<span class="publish_date">' . $longdate . '</span>',
+                                     editorinfo($publish['cur']['client']));
+                $strings[] = '</span>';
+                if($previous_published) {
+                    $strings[] = '<span class="publish_previous">';
+                    $strings[] = sprintf($this->getLang('previous'),
+                                    wl($ID, 'rev=' . $previous_published),
+                                    date('d/m/y H:i', $previous_published));
+                    $strings[] = $this->difflink($ID, $previous_published, $REV) . '</span>';
+                }
+            } else {
+                $strings[] = '<span class="publish_outdated">';
+                $strings[] = sprintf($this->getLang('has_published'), wl($ID, 'rev=' . $published));
+                $strings[] = $this->difflink($ID, $published, $REV);
+                $strings[] = '</span>';
+            }
         }
 
         $strings[] = '</div>';
@@ -210,34 +148,29 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
     }
 
     function handle_revisions(&$event, $param) {
-        global $ID;
         if(!$this->helper->publishing()) { return; }
-        global $REV;
-        $meta = p_get_metadata($ID);
-        $latest_rev = $meta['last_change']['date'];
+        global $INFO;
+        $meta =& $INFO['meta'];
 
-        $member = null;
+        $open_div = null;
         foreach($event->data->_content as $key => $ref) {
             if($ref['_elem'] == 'opentag' && $ref['_tag'] == 'div' && $ref['class'] == 'li') {
-                $member = $key;
+                $open_div = $key;
             }
-
-            if($member && $ref['_elem'] == 'tag' &&
-                $ref['_tag'] == 'input' && $ref['name'] == 'rev2[]'){
-                if($meta['publish'][$ref['value']] ||
-                        ($ref['value'] == 'current' && $meta['publish'][$latest_rev])) {
-                  $event->data->_content[$member]['class'] = 'li published_revision';
-                }else{
-                  $event->data->_content[$member]['class'] = 'li unpublished_revision';
+            
+            if($ref['value'] == 'current') $ref['value'] = $meta['last_change']['date'];
+            if($open_div && $ref['_elem'] == 'tag' && $ref['_tag'] == 'input' && $ref['name'] == 'rev2[]') {
+                if($ref['value'] == $meta['publish']['cur']['rev']) {
+                    $event->data->_content[$open_div]['class'] .= ' published_revision';
                 }
                 $member = null;
             }
         }
 
-
         return true;
     }
 
+    // BROKEN
     function handle_recent(&$event, $param) {
         #$meta = p_get_metadata($ID);
         #$latest_rev = $meta['last_change']['date'];
@@ -249,7 +182,7 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
             }
 
             if($member && $ref['_elem'] == 'opentag' &&
-                $ref['_tag'] == 'a' && $ref['class'] == 'diff_link'){
+               $ref['_tag'] == 'a' && $ref['class'] == 'diff_link'){
                 $name = $ref['href'];
                 $name = explode('?', $name);
                 $name = explode('&', $name[1]);
@@ -299,6 +232,9 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         global $INFO;
         if($INFO['perm'] > AUTH_READ) { return; }
 
+        # only apply to existing pages
+        if(!$INFO['exists']) { return; }
+
         # Check for override token
         global $_GET;
         if($_GET['force_rev']) { return; }
@@ -307,17 +243,16 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
         if(!$this->helper->publishing()) { return; }
 
         # If latest revision is published, then we're done
-        if($INFO['meta']['publish'][$INFO['meta']['last_change']['date']]) { return; }
+        if($INFO['meta']['publish']['cur']['rev'] == $INFO['meta']['last_change']['date']) { return; }
 
-        # If no publications of existing page, point to invalid revision
-        if(!$INFO['meta']['publish']) {
-            if($INFO['exists']) { $REV = -1; }
+        # If no publications, point to invalid revision
+        if(!$INFO['meta']['publish']['cur']) {
+            $REV = -1;
             return;
         }
 
         # Point to most recent published revision
-        $all = array_keys($INFO['meta']['publish']);
-        $REV = $all[count($all)-1];
+        $REV = $INFO['meta']['publish']['cur']['rev'];
     }
 }
 

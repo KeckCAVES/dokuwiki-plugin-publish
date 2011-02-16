@@ -2,9 +2,10 @@
 
 // banner
 $lang['recent_draft'] = 'The <a href="%s">most recent version</a> of this document is a draft.';
-$lang['outdated'] = 'This version is <em>outdated</em> by a <a href="%s">newer published version</a>.';
+//$lang['outdated'] = 'This version is <em>outdated</em> by a <a href="%s">newer published version</a>.';
 $lang['draft'] = 'This version (%s) is a <em>draft</em>.';
 $lang['published'] = 'This version (%s) was <em>published</em> by %s.';
+$lang['has_published'] = 'There is a <a href="%s">published version</a> of this page.';
 $lang['previous'] = 'The <a href="%s">previously published version</a> (%s) is available.';
 
 // Pending Publications List
@@ -16,5 +17,15 @@ $lang['p_published'] = 'By %s on <a href="%s">%s</a>';
 
 // Action name
 $lang['do_publish'] = 'Publish';
+$lang['do_unpublish'] = 'Unpublish';
+
+// Operation messages
+$lang['bad_perm'] = 'You do not have publishing permission.';
+$lang['bad_page'] = 'This page does not use publishing.';
+$lang['bad_rev'] = 'Only the most recent revision may be operated on.';
+$lang['warn_pub'] = 'This revision is already published.';
+$lang['warn_unpub'] = 'This revision is already unpublished.';
+$lang['ok_pub'] = 'Published page.';
+$lang['ok_unpub'] = 'Unpublished page.';
 
 ?>
