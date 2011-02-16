@@ -16,7 +16,7 @@ page without affecting what the public sees until they are ready to publish.
 
 Install like any other DokuWiki plugin, except for one caveat:
 
-The plugin cannot stop DokuWiki from warning the viewer that s/he are looking
+The plugin cannot stop DokuWiki from warning the viewer that s/he is looking
 at an old version of the page.  To disable this feature in Dokuwiki, you must
 comment out line 245 of the file 'inc/html.php', e.g.:
 
