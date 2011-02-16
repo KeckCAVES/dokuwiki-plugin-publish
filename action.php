@@ -1,18 +1,5 @@
 <?php
 
-// TODO:
-// Old Revisions Display   X
-// Recent Changes Display X
-// Redirection X
-// List of Unpublished Documents user has permission to publish X
-// Namespace restrictions + admin X
-// Diff Links in banner on Prev published X
-// List of Recent publications X
-// Subscriptions should show publications - hard (MAIL_MESSAGE_SEND is the only appropriate hook)
-// Allow submits of docs with no changes for publication, with autocomment X
-// RSS Info -- hard (no hooks in feed.php)
-// Internationalisation (or not) X
-
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
