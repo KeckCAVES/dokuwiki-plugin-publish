@@ -118,11 +118,15 @@ class action_plugin_publish extends DokuWiki_Action_Plugin {
                     $strings[] = $this->difflink($ID, $previous_published, $REV) . '</span>';
                 }
             } else {
-                $strings[] = '<span class="publish_outdated">';
+                $strings[] = '<span class="publish_exists">';
                 $strings[] = sprintf($this->getLang('has_published'), wl($ID, 'rev=' . $published));
                 $strings[] = $this->difflink($ID, $published, $REV);
                 $strings[] = '</span>';
             }
+        } else {
+            $strings[] = '<span class="publish_none">';
+            $strings[] = $this->getLang('no_published');
+            $strings[] = '</span>';
         }
 
         $strings[] = '</div>';

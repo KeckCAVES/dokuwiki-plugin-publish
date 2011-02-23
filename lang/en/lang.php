@@ -6,6 +6,7 @@ $lang['recent_draft'] = 'The <a href="%s">most recent version</a> of this docume
 $lang['draft'] = 'This version (%s) is a <em>draft</em>.';
 $lang['published'] = 'This version (%s) was <em>published</em> by %s.';
 $lang['has_published'] = 'There is a <a href="%s">published version</a> of this page.';
+$lang['no_published'] = 'There is no published version of this page.';
 $lang['previous'] = 'The <a href="%s">previously published version</a> (%s) is available.';
 
 // Pending Publications List
