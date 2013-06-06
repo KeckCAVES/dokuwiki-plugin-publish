@@ -18,7 +18,7 @@ Install like any other DokuWiki plugin, except for one caveat:
 
 The plugin cannot stop DokuWiki from warning the viewer that s/he is looking
 at an old version of the page.  To disable this feature in Dokuwiki, you must
-comment out line 245 of the file 'inc/html.php', e.g.:
+comment out line 243 of the file 'inc/html.php', e.g.:
 
     ...
     }else{
@@ -27,4 +27,4 @@ comment out line 245 of the file 'inc/html.php', e.g.:
         $html = html_secedit($html,$secedit);
     ...
 
-The above is current as of DokuWiki 2010-11-07a ("Anteater").
+The above is current as of DokuWiki 2013-05-10 ("Weatherwax").
